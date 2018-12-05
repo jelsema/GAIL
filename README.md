@@ -18,6 +18,8 @@ Geo-Allocation of Irregular Units
 
 - A Windows version may be added here in the future.
 
+- A Windows version may be added here in the future.
+
 ## Usage
 
 Some basic examples will eventually be added here
