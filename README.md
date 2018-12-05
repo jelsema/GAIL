@@ -3,16 +3,20 @@ GAIL
 
 Geo-Allocation of Irregular Units
 
-This is an [R](https://cran.r-project.org/) package for allocating data from irregular spatial units onto a regular set of spatial units.
+- This is an [R](https://cran.r-project.org/) package for allocating data from irregular spatial units onto a regular set of spatial units.
 
-More description will come when the associated paper is submitted or accepted.
+- The package is very new. If you look at it, you will see there are incomplete entries or placeholder text in some areas.
+
+- More description will come when the associated paper is submitted or accepted.
 
 
 ## Installation
 
-This package is not on CRAN. To install, you can use:
+- This package is not on CRAN. To install, you can use:
 
 `devtools::install_github( "jelsema/CLME" )`
+
+- A Windows version may be added here in the future.
 
 ## Usage
 
