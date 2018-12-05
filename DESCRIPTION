@@ -1,0 +1,21 @@
+Package: GAIL
+Title: Geo-Assigment of Irregular Locations
+Version: 0.0-1
+Depends:
+    R (>= 3.3.0), dplyr, purrr, geosphere
+Imports:
+    methods, stats
+Suggests:
+	testthat
+Date: 2018-12-03
+Description: A package for handling allocating a set of irregular spatial units (e.g. P.O. Box ZIP codes) onto a regular set of spatial units (e.g. Standard ZIP codes, Census Tract, County, etc).
+Authors@R: c(person("Casey M."  , "Jelsema", email="jelsema.casey@gmail.com", role=c("aut", "cre") ), 
+             person("Hendricks.", "Brian", role="aut" ),
+			 person("Dick.", "Taron", role="aut" ))
+Maintainer: Casey M. Jelsema <jelsema.casey@gmail.com>
+BugReports: https://github.com/jelsema/GAIL/issues
+LazyLoad: no
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 6.1.1
