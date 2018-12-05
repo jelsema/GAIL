@@ -14,7 +14,7 @@ Geo-Allocation of Irregular Units
 
 - This package is not on CRAN. To install, you can use:
 
-`devtools::install_github( "jelsema/CLME" )`
+`devtools::install_github( "jelsema/GAIL" )`
 
 - A Windows version may be added here in the future.
 
