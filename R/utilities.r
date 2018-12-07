@@ -34,7 +34,7 @@
 #' 
 #' @importFrom geosphere distm
 #' 
-n_neighbors <- function( val, df1, df2, max_dist, suid, ... ){
+gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
   
   # df2b     <- df2 %>% filter( !!sym( suid ) == val )
   ridx <- which( df2[[suid]] == val )

@@ -20,7 +20,7 @@ Geo-Allocation of Irregular Units
 
 ## Usage
 
-Some basic examples will eventually be added here
+Some basic examples will be added here in the future.
 
 ## License
 

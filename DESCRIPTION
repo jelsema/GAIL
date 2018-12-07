@@ -6,7 +6,7 @@ Depends:
 Imports:
     methods, stats
 Suggests:
-	testthat
+	ggplot2, testthat
 Date: 2018-12-03
 Description: A package for handling allocating a set of irregular spatial units (e.g. P.O. Box ZIP codes) onto a regular set of spatial units (e.g. Standard ZIP codes, Census Tract, County, etc).
 Authors@R: c(person("Casey M."  , "Jelsema", email="jelsema.casey@gmail.com", role=c("aut", "cre") ), 

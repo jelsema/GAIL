@@ -5,11 +5,17 @@
 #' Geo-Assignment of Irregular Locations to Shapes
 #'
 #' @description
-#' DESCRIPTION OF FUNCTION
+#' Assigns the number of cases/events from irregular spatial units onto to regular set of spatial units.
+#' The regular spatial units are assumed to be polygons, while the irregular spatial units are
+#' represented by a centroid. 
+#' 
+#' Note that this function is largely a wrapper for using `sf::st_join` with basic
+#' aggregation before and after. It is provided primarily for (relative) consistency with [gail].
 #' 
 #' 
-#' @param sp_units Data frame of regular spatial units, see details.
-#' @param cases Data frame containing the the cases, see details.
+#' @param sp_units Dataset of regular spatial units, see details.
+#' @param cases Dataset containing the the cases, see details.
+#' @param suid Column name in both `sp_units` and `cases` which contains the spatial unit identification / name.
 #' @param num_cases Column name from `cases` containing the number of cases, see details.
 #' @param group Optional name of variable in `cases` to use for filtering. See details.
 #' @param label Optional value of `group` by which to filter. See details.
@@ -19,19 +25,26 @@
 #' 
 #' 
 #' @details 
-#'  - `cases` : The dataset of cases should be aggregated and have a column for the number 
+#'  - `sp_units` should be an object of class `sf` (from the **sf** package). If not, it must 
+#'  have coordinates `latitude` and `longitude` and will be converted to an `sf` object. The 
+#'  argument `convert` can be used to convert the results into a `Spatial*` object (from 
+#'  the **sp** package).
+#'  
+#'  - `cases` should be an object of class `sf`. If not, it must have coordinates `latitude` 
+#'  and `longitude` and will be converted to an `sf` object.
+#'  The dataset of cases should be aggregated and have a column for the number 
 #'     of cases. If the column given by `num_cases` does not exist in `cases`,
 #'     then `cases` will be aggregated to create the column.
+#'  
+#'  - `suid` is only used if `gail_shp` needs to aggregate `cases`.
 #'  
 #'  - `group` and `label` : If provided, these arguments are used to filter `cases`
 #'    to rows where `group == label`.
 #' 
-#' @note
-#' MAYBE SOME COMMENTS.
-#' 
 #' 
 #' @return
-#' Returns a list containing DESCRIBE THE RESULTS
+#' Returns a copy of `sp_units` after having added a column named `num_cases`, which contains 
+#' the number of cases which fall within the boundry of each spatial unit.
 #' 
 #' 
 #' @seealso
@@ -39,12 +52,14 @@
 #' 
 #' @export
 #' 
-gail_shp <- function( sp_units, cases, num_cases, group, label , convert=FALSE , ... ){
+gail_shp <- function( sp_units, cases, suid, num_cases, group, label , convert=FALSE , ... ){
   
   
   ## Filter the cases if needed
   if( !missing(group) & !missing(label) ){
-    cases <- cases %>% filter( !!sym(group) == label )
+    if( !is.null(group) & !is.null(label)  ){
+      cases <- cases %>% filter( !!sym(group) == label )
+    }
   }
   
   ## Aggregate cases if needed

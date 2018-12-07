@@ -4,7 +4,11 @@
 #' Geo-Assignment of Irregular Locations
 #'
 #' @description
-#' DESCRIPTION OF FUNCTION
+#' Applies random allocation of irregular spatial units to nearby regular spatial units. Both sets of 
+#' of spatial units are assummed to be represented by their centroid (hence they should be point objects,
+#' and not shape objects). Several methods are available for allocating irregular units, including equal 
+#' probability, inverse centroid distance, and use of an index variable. Alternatively the user may 
+#' specify a custom function to determine allocation probabilities.
 #' 
 #' @param sp_units Data frame of regular spatial units, must have columns named `longitude` and `latitude`.
 #' @param cases Data frame containing the the cases, see details.
@@ -40,8 +44,6 @@
 #'   is missing, `gail` finds the unique values of `group` and takes the first element as the regular spatial 
 #'   units, and the second element as the irregular spatial units.
 #' 
-#' @note
-#' MAYBE SOME COMMENTS.
 #' 
 #' 
 #' @return
@@ -49,6 +51,7 @@
 #' 
 #' 
 #' @import dplyr 
+#' @import sf
 #' @import units
 #' @importFrom purrr map_dfr
 #' 
@@ -124,7 +127,6 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, group, labels, RAP
   
   
   
-  
   #units_reg <- sp_units %>% dplyr::filter( complete.cases(.) & !!sym( group ) == labels[1] ) %>%
   #  st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ... )
   #
@@ -136,7 +138,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, group, labels, RAP
   
   ## Number of neighbors for the irregular regions
   num_neighbors <- map_dfr( units_irr[[ suid ]] ,
-                            ~n_neighbors( .x, df1=units_reg, df2=units_irr, max_dist=max_dist, suid=suid ) )
+                            ~gail_nn( .x, df1=units_reg, df2=units_irr, max_dist=max_dist, suid=suid ) )
   
   if(  min(num_neighbors) < 3  ){
     stop("Some irregular sp_units have less than 3 regular unit neighbors. Try increasing max_dist")
@@ -175,7 +177,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, group, labels, RAP
     ## The set of regular sp_units within max_dist of the irregular
     reg_kk <- units_reg %>% dplyr::filter( dist_to_irr <= max_dist )
     
-    allocation_probs <- RAP( rUnits=units_reg, iUnits=units_irr   , 
+    allocation_probs <- RAP( rUnits=units_reg, iUnits=units_irr[ii,]   , 
                              rUclose=reg_kk  , max_dist=max_dist  ,
                              method=method   , index_val=index_val, ... )
     
