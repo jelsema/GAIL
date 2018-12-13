@@ -4,30 +4,40 @@
 #' Geo-Assignment of Irregular Locations
 #'
 #' @description
-#' Applies random allocation of irregular spatial units to nearby regular spatial units. Both sets of 
-#' of spatial units are assummed to be represented by their centroid (hence they should be point objects,
-#' and not shape objects). Several methods are available for allocating irregular units, including equal 
+#' Stochastic allocation of irregular spatial units to nearby regular spatial units. Both sets of 
+#' of spatial units are assummed to be represented by their centroid (hence they should be POINT objects,
+#' and not POLYGON objects). Several methods are available for allocating irregular units, including equal 
 #' probability, inverse centroid distance, and use of an index variable. Alternatively the user may 
 #' specify a custom function to determine allocation probabilities.
 #' 
 #' @param sp_units Data frame of regular spatial units, must have columns named `longitude` and `latitude`.
 #' @param cases Data frame containing the the cases, see details.
-#' @param suid Column name in both `sp_units` and `cases` which contains the spatial unit identification / name.
+#' @param suid Column name in both `cases` which contains the spatial unit identification / name.
 #' @param num_cases Column name from `cases` containing the number of cases, see details.
 #' @param max_dist The maximum distance at which two locations can be considered neighbors.
-#' @param group Name of variable in `sp_units` to denote regular and irregular spatial units.
-#' @param labels Vector of values for the regular and irregular units (the values from `group`), with the first.
-#'         element being the regular units, and the second element being the irregular units.
 #' @param RAP Function to be used for calculating assignment probabilities, see details.
 #' @param seed If given, sets the seed for the RNG.
+#' @param unit_value The units of distance, default to meters. See [units::set_units].
 #' @param convert Logical, convert returned object to `Spatial*` type objects (from **sp**).
 #' @param ... Space for additional arguments (e.g., for `RAP`).
 #'  
 #' 
 #' @details 
-#'  - `cases` : The dataset of cases should be aggregated and have columns for the spatial unit name 
-#'  (given by `suid`) and the number of cases. If the column given by `num_cases` does not exist in `cases`,
-#'   then `cases` will be aggregated to create the column.
+#'  - `sp_units` is is set of spatial units that are the "destination", the cases will be aggregated to
+#'    this set of units. It should contain only unique spatial units (no duplicates), and should not have
+#'    any spatial units on a different scale. It must either be an object of class `sf` or have variables 
+#'    `longitude` and `latitude` to be convertable into an object of class `sf`.
+#'  
+#'  - `cases` contains the units (and associated number of cases) to be allocated. 
+#'  This should be an object of class `sf`. If not, it must have coordinates `latitude` 
+#'  and `longitude` and will be converted to an `sf` object.
+#'  The dataset of cases should be aggregated and have a column for the number 
+#'     of cases. If the column given by `num_cases` does not exist in `cases`,
+#'     then `cases` will be aggregated by `suid` to create the column.
+#'  
+#'  - If `sp_units` also has a column as given by `suid`, this will be assumed to be a common ID between
+#'    `cases` and `sp_units`. Exact matches by `suid` will be allocated deterministically. Any remaining
+#'    cases will be allocated stochastically.  
 #'  
 #'  - `RAP` : The argument controls how irregular spatial units are allocated to regular spatial units.
 #'  There are several formats this can take. If `RAP` is a function, it will be used. Otherwise `gail_rap` 
@@ -39,11 +49,6 @@
 #'    - Otherwise, `method="equal"` and `index_var = NULL` .
 #'  
 #'  The user may also specify only `method` and/or `index_val` to control the behavior of `gail_rap` appropriately.
-#'  
-#'  - `labels` : The general (but not default) format of this is `labels=c("Standard", "Irregular")`. If `labels`
-#'   is missing, `gail` finds the unique values of `group` and takes the first element as the regular spatial 
-#'   units, and the second element as the irregular spatial units.
-#' 
 #' 
 #' 
 #' @return
@@ -54,10 +59,11 @@
 #' @import sf
 #' @import units
 #' @importFrom purrr map_dfr
+#' @importFrom data.table :=
 #' 
 #' @export
 #' 
-gail <- function( sp_units, cases, suid, num_cases, max_dist, group, labels, RAP=gail_rap, seed=NULL, convert=FALSE, ... ){
+gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed=NULL, unit_value="m", convert=FALSE, ... ){
   
   ## Some error-checking on arguments
   if(   missing(sp_units) | missing(cases)   ){
@@ -66,19 +72,22 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, group, labels, RAP
   if(   missing(max_dist)  |  !is.numeric(max_dist)   ){
     stop("max_dist must be numeric")
   }
-  if( is.null(group) ){
-    stop("group must be a variable name in sp_units identifying regular / irregular units")
-  }
+  
+  ## Attach units to max_dist
+  ## Eventually this can probably be removed
+  ## This line doesn't work for some reason
+  #   max_dist <- units::as_units( max_dist , value=unit_value )
+  
+  ## Should first check if max_dist has a unit attached.
+  ## If yes, then use that. Otherwise, set it
+  units( max_dist ) <- unit_value
+  
   
   ##
   ## Extract some information from the arguments
   ##
   
   cc <- match.call()
-  
-  if( missing(labels) ){
-    labels <- unique( sp_units[[ suid ]] )[1:2]
-  }
   
   if( !is.function(RAP) ){
     ## if RAP is not a function, set RAP to 
@@ -112,122 +121,158 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, group, labels, RAP
   ## Remove any units with NA in them
   
   if( !("sf" %in% class(sp_units))  ){
-    sp_units <- sp_units %>%  dplyr::filter( complete.cases(.) ) %>%
+    sp_units <- sp_units %>%
       st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ...  )
   } else{
-    sp_units <- sp_units %>%  dplyr::filter( complete.cases(.) )
+    if(  any( sf::st_geometry_type( sp_units ) != "POINT" ) ){
+      stop("gail() expects features of sp_units to have POINT geometry.\nSee ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry.\ngail_shp() expects features of sp_units to have POLYGON geometry.")
+    }
+    # Recommend this code?
+    # sp_units <- st_set_geometry( sp_units, value=NULL )
+    # sp_units <- st_as_sf( sp_units , coords = c("longitude", "latitude"), agr = "aggregate")
+    # sp_units <- sp_units %>%  dplyr::filter( complete.cases(.) )
   }
   
-  units_reg <- sp_units %>% dplyr::filter( !!sym( group ) == labels[1] )
-  units_irr <- sp_units %>% dplyr::filter( !!sym( group ) == labels[2] )
-  
-  if( !is.null( cc$crs) ){
-    units( max_dist ) <- units( st_distance( units_reg[1,], units_reg[2,] ) )
-  }
+  shapefile_crs_format <- st_crs( sp_units )
   
   
-  
-  #units_reg <- sp_units %>% dplyr::filter( complete.cases(.) & !!sym( group ) == labels[1] ) %>%
-  #  st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ... )
-  #
-  #units_irr <- sp_units %>% dplyr::filter( complete.cases(.) & !!sym( group ) == labels[2] ) %>%
-  #  st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ... )
-  #
-  # units_oth <- sp_units %>% dplyr::filter( !(!!sym(group) %in% labels) & !is.na(!!sym(group)) ) %>%
-  #   st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", crs=crs )
-  
-  ## Number of neighbors for the irregular regions
-  num_neighbors <- map_dfr( units_irr[[ suid ]] ,
-                            ~gail_nn( .x, df1=units_reg, df2=units_irr, max_dist=max_dist, suid=suid ) )
-  
-  if(  min(num_neighbors) < 3  ){
-    stop("Some irregular sp_units have less than 3 regular unit neighbors. Try increasing max_dist")
-  }
-  
-  ## Get number of cases for each suid / unit and join to main dataframes
-  
-  if( !any( colnames(cases) == num_cases ) ){
+  ## Detect if cases is simple features object
+  ## If NOT, set as sf
+  ## If YES, check to make sure it is POINT geometry
+  if( !("sf" %in% class(cases))  ){
     
-    cases <- cases %>% 
-      dplyr::group_by( !!sym( suid ) ) %>% 
-      dplyr::summarize( !!num_cases := n() )
+    ## Aggregate cases if needed
+    if( !any( colnames(cases) == num_cases ) ){
+      cases <- cases %>% 
+        dplyr::group_by( !!sym( suid ) ) %>% 
+        dplyr::summarize( !!num_cases := n() )
+    }
+    
+    cases <- st_as_sf( cases , coords = c("longitude", "latitude"),
+                       crs = shapefile_crs_format  , agr = "aggregate" )
+    
+  } else{
+    if(  any( sf::st_geometry_type( sp_units ) != "POINT" ) ){
+      stop("gail() expects features of cases to have POINT geometry.\nSee ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry.")
+    }
+    st_crs(cases) <- shapefile_crs_format
     
   }
   
-  
-  
-  #cases_sum <- cases %>% 
-  #  dplyr::group_by( !!sym( suid ) ) %>% 
-  #  dplyr::summarize( ncase = n() )
-  
-  ## The final sets of regular, irregular, and "other" regions
-  units_reg <- units_reg %>% dplyr::left_join( cases , by=suid )
-  units_irr <- units_irr %>% dplyr::left_join( cases , by=suid ) %>% dplyr::filter( !!sym( num_cases ) > 0  )
-  units_oth <- cases     %>% dplyr::anti_join( units_reg , by=suid ) %>% dplyr::anti_join( units_irr , by=suid )
-  
-  ## Loop through all of the IRREGULAR sp_units and apply RAP()
-  assigned_units <- list()
-  for( ii in 1:nrow(units_irr) ){
-    
-    n_to_assign <- units_irr[[ num_cases ]][ii]
-    units_reg   <- units_reg %>% dplyr::mutate(
-      dist_to_irr = st_distance( units_reg , units_irr[ii,] )
-    )
-    
-    ## The set of regular sp_units within max_dist of the irregular
-    reg_kk <- units_reg %>% dplyr::filter( dist_to_irr <= max_dist )
-    
-    allocation_probs <- RAP( rUnits=units_reg, iUnits=units_irr[ii,]   , 
-                             rUclose=reg_kk  , max_dist=max_dist  ,
-                             method=method   , index_val=index_val, ... )
-    
-    assigned_units[[ii]] <- sample( reg_kk[[ suid ]], n_to_assign,
-                                    replace=TRUE, prob=allocation_probs )
+  ## Is num_cases an existing column in sp_units
+  ## If NOT, then initialize it.
+  if(  !(any(colnames(sp_units) == num_cases))  ){
+    sp_units[[ num_cases ]] <- 0
   }
   
-  ## Convert to vector and summarize into counts
-  assigned_units <- tibble( !!suid := unlist( assigned_units ) ) %>%
-    dplyr::group_by( !!sym(suid) ) %>%
-    dplyr::summarize( newcases = n() )
+  ##
+  ## Deterministic Allocation
+  ##
   
-  units_reg <- units_reg %>% dplyr::select( -dist_to_irr )
+  ## Is suid a column in BOTH datasets?
+  ## If YES, then add to num_cases for those spatial units.
+  ## Aldo REMOVE from cases those values which are de
+  if(  any(colnames(sp_units)==suid)  ){
+    
+    allocated_cases <- rep( 0 , nrow(cases) )
+    
+    for( ii in 1:nrow(cases) ){
+      idx_suid <- which( sp_units[[suid]] == cases[[suid]][ii]  )
+      
+      if( length(idx_suid)==1 ){
+        sp_units[[num_cases]][idx_suid] <- sp_units[[num_cases]][idx_suid] + cases[[num_cases]][ii]
+        allocated_cases[ii] <- 1
+      }
+    }
+    
+    ## Generate the sets of cases allocated deterministically
+    ## and those needed to be allocated stochastically
+    cases_detrm <- sp_units
+    cases_stoch <- cases[ allocated_cases==0 , ]
+  } else{
+    
+    ## Maybe delete these? Is it really necessary to report this?
+    ## Would need to rework object names below, but would save memory for large datasets
+    cases_detrm <- sp_units
+    cases_stoch <- cases
+    
+  }
   
-  ## Merge the counts into the data
-  final_assignment <- units_reg %>% 
-    dplyr::left_join( assigned_units , by=suid  ) %>%
-    dplyr::mutate( !!num_cases :=  !!sym( num_cases ) + newcases ) %>%
-    dplyr::select( -newcases )
+  ##
+  ## Stochastic Allocation
+  ##
   
-  
+  ## Only stochastically allocate if there are any spatial units left to allocate
+  if( nrow(cases_stoch)>0 ){
+    
+    ## Number of neighbors for the irregular regions
+    num_neighbors <- map_dfr( cases_stoch[[ suid ]] ,
+                              ~gail_nn( .x, df1=cases_detrm, df2=cases_stoch, max_dist=max_dist, suid=suid ) )
+    
+    if(  min(num_neighbors) < 3  ){
+      stop("Some irregular sp_units have less than 3 regular unit neighbors. Try increasing max_dist")
+    }
+    
+    
+    
+    ## Loop through all of the IRREGULAR sp_units and apply RAP()
+    for( ii in 1:nrow(cases_stoch) ){
+      
+      n_to_assign <- cases_stoch[[ num_cases ]][ii]
+      
+      ## The set of regular sp_units within max_dist of the cases to be allocated
+      # dist_kk <- units::set_units(  sf::st_distance( sp_units , cases_stoch[ii,] ),   value=unit_value )
+      dist_kk <- sf::st_distance( sp_units , cases_stoch[ii,] )
+      units( dist_kk ) <- unit_value
+      
+      
+      idx_kk  <- which( dist_kk <= max_dist )
+      reg_kk  <- sp_units[ idx_kk , ]
+      
+      
+      allocation_probs <- RAP( rUnits=sp_units, iUnits=cases_stoch[ii,]   , 
+                               rUclose=reg_kk  , rUdist=dist_kk[idx_kk],  max_dist=max_dist  ,
+                               method=method   , index_val=index_val  )
+      
+      allocations <- sample( 1:length(idx_kk) , n_to_assign, replace=TRUE, prob=allocation_probs )
+      n_assigned  <- table( c( 1:length(idx_kk) , allocations )  ) - 1
+      sp_units[[ num_cases ]][ idx_kk ] <- sp_units[[ num_cases ]][ idx_kk ] + n_assigned
+      
+    }
+    
+  }
+
   ## Convert from sf to sp if requested
   if( convert==TRUE ){
-    units_reg <- as( units_reg , "Spatial" )
-    units_irr <- as( units_irr , "Spatial" )
-    units_oth <- as( units_oth , "Spatial" )
-    final_assignment <- as( final_assignment , "Spatial" )
+    cases_detrm <- as( cases_detrm , "Spatial" )
+    cases_stoch <- as( cases_stoch , "Spatial" )
+    sp_units    <- as( sp_units    , "Spatial" )
   }
   
   
   ## Make and return the results
   return_obj <- list(
-    rap_method       = list( method=method, index_val=index_val ),
-    units_reg        = units_reg ,
-    units_irr        = units_irr ,
-    units_oth        = units_oth ,
-    final_assignment = final_assignment
+    rap_method = list( method=method, index_val=index_val ),
+    units_reg  = cases_detrm ,
+    units_irr  = cases_stoch ,
+    sp_units   = sp_units
   )
   
   return( return_obj )
   
   
-  if( FALSE ){
-    # !!sym( num_cases ) 
-    # - from -
-    # ncase
-  }
-  
-  
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -14,8 +14,13 @@
 #' 
 #' 
 #' @details
-#' SOME DETAILS OF GAIL
+#' The motivating use-case for this package wasto allocate cases of some disease (e.g., influenza) 
+#' from PO Box ZIP codes to nearby Standard ZIP codes. Often data from PO Box ZIP codes are discarded, 
+#' or all of the data are aggregated to a larger spatial unit such as county. To preserve the cases 
+#' associated with PO Box ZIP codes at the more fine spatial resolution (Standard ZIP code), we 
+#' stochastically allocate cases from PO Box ZIP codes to 
 #' 
+#' @import methods
 #' 
 "_PACKAGE"
 

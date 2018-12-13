@@ -1,6 +1,10 @@
 =============================
 PROJECTED DEVELOPMENT:
-- 
+- Better way to handle setting distance unit. I don't know yet how to
+  manipulate the crs to edit only the distnace metric.
+
+
+
 =============================
 VERSION HISTORY:
 

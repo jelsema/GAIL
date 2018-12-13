@@ -32,7 +32,8 @@
 #' @seealso
 #' [gail]
 #' 
-#' @importFrom geosphere distm
+#' @import units
+#' @importFrom sf st_distance
 #' 
 gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
   
@@ -40,9 +41,10 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
   ridx <- which( df2[[suid]] == val )
   df2b <- df2[ ridx , ]
   
-  dist_vec <- st_distance( df1 , df2b, ... )
+  dist_vec <- sf::st_distance( df1 , df2b, ... )
+  units(dist_vec) <- units(max_dist)
   
-  return( list(nneigh = sum(dist_vec <= max_dist) ) )
+  return( list(  nneigh = sum(dist_vec <= max_dist) )  )
   
 }
 
@@ -56,9 +58,10 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 #' Function to calculate the (relative) probability of assigning an irregular unit to a
 #' neighboring regular unit.
 #' 
-#' @param rUnits Data frame of regular spatial units, must have columns `lat` and `long`.
-#' @param iUnits Data frame of irregular spatial units, must have columns named `lat` and `long`.
-#' @param rUclose The set of regular units that are considered.
+#' @param rUnits Data frame of regular spatial units.
+#' @param iUnits Data frame of irregular spatial unit being allocated.
+#' @param rUclose The set of regular units that are considered close (within `max_dist`)
+#' @param rUdist Vector of distances of `rUclose` to `iUnits`
 #' @param max_dist The maximum distance at which two locations can be considered neighbors.
 #' @param method The method of allocation, see details.
 #' @param index_val If `method="index"`, the name of the variable (in `rUnits`) to be used as an index variable.
@@ -88,38 +91,23 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 #' 
 #' @export
 #' 
-gail_rap <- function( rUnits, iUnits, rUclose, max_dist, method, index_val, ... ){
+gail_rap <- function( rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val, ... ){
+  
   
   
   
   if( method=="index" ){
     allocation_probs <- rUclose[[ index_val ]] / sum( rUclose[[ index_val ]] )
   } else if( method=="equal" ){
-    allocation_probs <- 1 / length(rUclose[["dist_to_irr"]])
+    allocation_probs <- 1 / nrow( rUclose )
   } else if( method=="icd" ){
-    allocation_probs <- 1 / rUclose[["dist_to_irr"]]
+    allocation_probs <- 1 / c( as.numeric( rUdist ) )
   }
   
   return( allocation_probs )
   
 }
 
-
-#' onLoad message
-#'
-#' @description
-#' OnLoad message
-#' 
-#' 
-.onLoad <- function(libname, pkgname){
-  
-  packageStartupMessage( "========================================================================\n
-GAIL is new and subject to many changes as development progresses.\n
-Refer to github site for questions: https://github.com/jelsema/GAIL\n
-========================================================================"
-  )
-
-}
 
 
 
