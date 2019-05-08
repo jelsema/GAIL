@@ -1,8 +1,3 @@
-
-
-
-
-
 #' Generate Artificial Polygon Regions
 #'
 #' @description
@@ -23,32 +18,31 @@
 #'  width 5 around the edge). Then uses `fields::cover.design` to select `npoints` of them.
 #'  Creates regions using Voronoi tesselation via `deldir::deldir` and `deldir::tile.list`.
 #'  
-#' @import dplyr bind_rows
-#' @import sf
-#' @import fields cover.design
-#' @import deldir
-#' 
-#' @export
 #' 
 #' @examples
 #' \dontrun{
-#'   tmp_out_01 <- gail_gen_regions( npoints=40, type="regular"  , nedge=10, suid="reg" )
-#'   tmp_out_02 <- gail_gen_regions( npoints=40, type="irregular", nedge=6 , seed=42 , P=-20, Q=20 )
+#'   loca_reg <- gail_gen_regions( npoints=40, type="regular"  , nedge=10, suid="reg" )
+#'   loca_irr <- gail_gen_regions( npoints=40, type="irregular", nedge=6 , seed=42 , P=-20, Q=20 )
 #'   
-#'   ggplot( tmp_out_01 ) + 
+#'   ggplot( loca_reg ) + 
 #'     geom_sf( aes(fill=region) )
-#'   ggplot( tmp_out_02 ) +
+#'   ggplot( loca_irr ) +
 #'     geom_sf( aes(fill=region) )
 #' }
 #' 
-
-
-
+#' 
+#' @importFrom dplyr bind_rows
+#' @import sf
+#' @importFrom fields cover.design
+#' @import deldir
+#' @importFrom stringr str_pad
+#' @importFrom stringr str_length
+#' 
+#' @export
 gail_gen_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, suid=NULL, ... ){
   
   ## Reference to create SF polygons:
   ## https://stackoverflow.com/questions/44335246/polygons-from-coordinates
-  
   
   if( is.numeric(seed) ){ set.seed( seed ) }
   if( is.null(suid) ){ suid <- "suid" }
@@ -85,34 +79,34 @@ gail_gen_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
     
   } else if( type == "irregular" ){
     
-    xdim <- runif( 1000, 5, 95 )
-    ydim <- runif( 1000, 5, 95 )
+    longitude <- runif( 1000, 5, 95 )
+    latitude  <- runif( 1000, 5, 95 )
     
     if( !is.null( cc$P ) ){
-      P <- as.numeric( paste0( as.character( tmp_out_02$P ), collapse="" ) )
-      Q <- as.numeric( paste0( as.character( tmp_out_02$Q ), collapse="" ) )
+      P <- as.numeric( paste0( as.character( cc$P ), collapse="" ) )
+      Q <- as.numeric( paste0( as.character( cc$Q ), collapse="" ) )
     }
     
-    outpoints <- fields::cover.design( as.matrix( cbind(xdim,ydim) ) , npoints, P=P, Q=Q )
-    #outpoints <- fields::cover.design( as.matrix( cbind(xdim,ydim) ) , npoints  )
+    outpoints <- fields::cover.design( as.matrix( cbind(longitude,latitude) ) , npoints, P=P, Q=Q )
+    #outpoints <- fields::cover.design( as.matrix( cbind(longitude,latitude) ) , npoints  )
     edge_seq  <- seq(0, 100, 100/nedge)
     out_des   <- dplyr::bind_rows( 
-      as.tibble( outpoints$design ), 
-      data.frame( xdim =   0,      ydim = edge_seq    ),
-      data.frame( xdim = 100,      ydim = edge_seq    ),
-      data.frame( xdim = edge_seq, ydim =   0         ),
-      data.frame( xdim = edge_seq, ydim = 100         )
+      as.data.frame( outpoints$design ), 
+      data.frame( longitude =   0,      latitude = edge_seq    ),
+      data.frame( longitude = 100,      latitude = edge_seq    ),
+      data.frame( longitude = edge_seq, latitude =   0         ),
+      data.frame( longitude = edge_seq, latitude = 100         )
     )
     
-    del_out   <- deldir::deldir( out_des[["xdim"]], out_des[["ydim"]] , rw=c(0,100,0,100) )
+    del_out   <- deldir::deldir( out_des[["longitude"]], out_des[["latitude"]] , rw=c(0,100,0,100) )
     del_out02 <- deldir::tile.list(del_out)
     
     sim_shp00 <- list()
     for( ii in 1:length(del_out02) ){
       sim_shp00[[ii]] <- st_polygon(
         list( as.matrix( cbind(
-          xdim = c( del_out02[[ii]]$x, del_out02[[ii]]$x[1] ) ,
-          ydim = c( del_out02[[ii]]$y, del_out02[[ii]]$y[1] )
+          longitude = c( del_out02[[ii]]$x, del_out02[[ii]]$x[1] ) ,
+          latitude  = c( del_out02[[ii]]$y, del_out02[[ii]]$y[1] )
         )))
       )
     }

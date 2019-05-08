@@ -176,7 +176,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
   
   ## Is suid a column in BOTH datasets?
   ## If YES, then add to num_cases for those spatial units.
-  ## Aldo REMOVE from cases those values which are de
+  ## Also REMOVE from cases those values which are de
   if(  any(colnames(sp_units)==suid)  ){
     
     allocated_cases <- rep( 0 , nrow(cases) )
@@ -217,8 +217,6 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
     if(  min(num_neighbors) < 3  ){
       stop("Some irregular sp_units have less than 3 regular unit neighbors. Try increasing max_dist")
     }
-    
-    
     
     ## Loop through all of the IRREGULAR sp_units and apply RAP()
     for( ii in 1:nrow(cases_stoch) ){

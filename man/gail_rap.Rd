@@ -34,7 +34,7 @@ neighboring regular unit.
 \itemize{
 \item \code{method = "index"} : the variable given by \code{index_val} (in \code{rUnits}) is used in the form \code{X / sum(X)}.
 \item \code{method = "equal"} : all neighboring spatial units (in \code{rUclose}) are given equal probability.
-\item \code{method = "imd"}   : inverse centroid distance, the closer the centroid of a regular spatial unit,
+\item \code{method = "icd"}   : inverse centroid distance, the closer the centroid of a regular spatial unit,
 the higher the probability. If \code{D} is the distance to the centroid, the probabilities are given by:
 \code{(1/D) / sum(1/D) = 1 / ( D * sum(1/D) )}. Similar to the index method, but uses a computed variable.
 }
