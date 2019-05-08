@@ -63,6 +63,11 @@
 #' 
 #' @export
 #' 
+#' 
+#' 
+#' 
+#' 
+
 gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed=NULL, unit_value="m", convert=FALSE, ... ){
   
   ## Some error-checking on arguments
@@ -92,7 +97,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
   if( !is.function(RAP) ){
     ## if RAP is not a function, set RAP to 
     ## be gail_rap and set a default method
-    if(   any(colnames(sp_units)==RAP)  ){
+    if( any(colnames(sp_units)==RAP)  ){
       method    <- "index"
       index_val <- colnames(sp_units)[ which(colnames(sp_units)==RAP) ]
     } else if( RAP == "icd") {
@@ -102,7 +107,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
       method    <- "equal"
       index_val <- NULL
     }
-    RAP    <- gail_rap
+    RAP <- gail_rap
   } else{
     method    <- cc$method
     index_val <- cc$index_val

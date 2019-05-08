@@ -27,6 +27,7 @@ A Windows version may be added here in the future.
 
 Some basic examples will be added here in the future. Eventually a vignette will be provided with the package.
 
+
 ## License
 
 This package is provided under the GPL-3 license.

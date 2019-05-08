@@ -70,7 +70,7 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 #' @details 
 #'  - `method = "index"` : the variable given by `index_val` (in `rUnits`) is used in the form `X / sum(X)`. 
 #'  - `method = "equal"` : all neighboring spatial units (in `rUclose`) are given equal probability.
-#'  - `method = "imd"`   : inverse centroid distance, the closer the centroid of a regular spatial unit,
+#'  - `method = "icd"`   : inverse centroid distance, the closer the centroid of a regular spatial unit,
 #'  the higher the probability. If `D` is the distance to the centroid, the probabilities are given by:
 #'  `(1/D) / sum(1/D) = 1 / ( D * sum(1/D) )`. Similar to the index method, but uses a computed variable.
 #' 
@@ -92,9 +92,6 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 #' @export
 #' 
 gail_rap <- function( rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val, ... ){
-  
-  
-  
   
   if( method=="index" ){
     allocation_probs <- rUclose[[ index_val ]] / sum( rUclose[[ index_val ]] )
