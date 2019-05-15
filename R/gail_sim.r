@@ -126,6 +126,93 @@ gail_gen_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
 
 
 
+#' Sets Incidence Rates for Simulated Regions
+#'
+#' @description
+#' Function for the simulation framework in GAIL.
+#' Create the underlying rate of cases for each regular spatial unit. This function can be bypassed
+#' if the user creates a variable names 'true_rate' in the set of regular spatial units. 
+#' 
+#' @param units_reg Set of regular spatial units
+#' @param rate_base Vector of length 2 giving upper and lower bounds for uniform distribution. 
+#'                  The base rate is randomly allocated between these two values. 
+#'                  Default is `c(0.03, 0.07)`.
+#' @param rate_spec A `data.frame` describing coordinates and change to base rate. See details.
+#' 
+#' @param seed If given, sets the seed for the RNG. 
+#' @param ... Space for additional arguments (e.g., for `fields::cover.design`).
+#'  
+#' 
+#' @details 
+#' Describe the data.frame input.
+#'  
+
+
+gail_set_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL ){
+  
+  if( is.null(rate_spec) ){
+    stop("Must provide argument 'rate_spec'")
+  }
+  
+  if( is.numeric(seed) ){
+    set.seed( seed )
+  }
+  
+  #rate_base <- c(0.03, 0.07)
+  nregion <- length( unique(units_reg[["region"]]) )
+  
+  ## Get the neighborhood matrix
+  #nhbd <- spdep::poly2nb( units_reg )
+  #Wmat <- spdep::nb2mat( nhbd, style="B" )
+  
+  # mvec <- as.matrix( rep(0,nregion) )
+  n_rate_gen <- 2000
+  loca_rate  <- data.frame( 
+    longitude = runif(n_rate_gen,0,100) , 
+    latitude  = runif(n_rate_gen,0,100)
+  )
+  
+  xmat <- matrix( NA, nrow=n_rate_gen, ncol=nrow(rate_spec) )
+  for( ii in 1:nrow(rate_spec) ){
+    dx  <- abs( loca_rate[["longitude"]] - rate_spec[["mx"]][ii] )
+    dy  <- abs( loca_rate[["latitude"]]  - rate_spec[["my"]][ii] )
+    dxy <- ((dx^2) / rate_spec[["ax"]][ii]^2) + ((dy^2) / rate_spec[["ay"]][ii]^2) 
+    xmat[,ii] <- (1 - 0.25*dxy)^2 * ( dxy^2 <= 4 )
+    xmat[,ii] <- xmat[,ii]/max(xmat[,ii])
+  }
+  
+  ## Initial Method: also averaged the uniform variable over the init points
+  # mvec1 <- runif( nregion, min(rate_base), max(rate_base) )
+  # mvec2 <- (xmat %*% rate_spec[["efc"]] ) 
+  # mvec2 <- ifelse( mvec2==0, 1, mvec2 )
+  # mvec  <- mvec1 * mvec2
+  # 
+  # loca_rate_st <- sf::st_as_sf( loca_rate , 
+  #                               coords = c("longitude", "latitude") )
+  # 
+  # loca_rate_ruc <- st_contains( units_reg, loca_rate_st )
+  # units_reg[["rate"]] <- NA
+  # for( ii in 1:nregion ){
+  #   units_reg[["rate"]][ii] <- mean( mvec[ loca_rate_ruc[[ii]] ]  )
+  # }
+  
+  mvec <- (xmat %*% rate_spec[["efc"]] )
+  mvec <- ifelse( mvec==0, 1, mvec )
+  
+  loca_rate_st <- sf::st_as_sf( loca_rate ,
+                                coords = c("longitude", "latitude") )
+  
+  loca_rate_ruc <- st_contains( units_reg, loca_rate_st )
+  mvec_base <- runif( nregion, min(rate_base), max(rate_base) )
+  
+  true_rate <- rep(NA,nregion)
+  for( ii in 1:nregion ){
+    true_rate[ii] <- mvec_base[ii] * mean( mvec[ loca_rate_ruc[[ii]] ]  )
+  }
+  
+  return( true_rate )
+  
+}
 
 
 
