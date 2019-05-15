@@ -39,7 +39,7 @@
 #' @importFrom stringr str_length
 #' 
 #' @export
-gail_gen_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, suid=NULL, ... ){
+gail_sim_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, suid=NULL, ... ){
   
   ## Reference to create SF polygons:
   ## https://stackoverflow.com/questions/44335246/polygons-from-coordinates
@@ -148,7 +148,7 @@ gail_gen_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
 #'  
 
 
-gail_set_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL ){
+gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL ){
   
   if( is.null(rate_spec) ){
     stop("Must provide argument 'rate_spec'")
@@ -214,6 +214,110 @@ gail_set_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL ){
   
 }
 
+
+#' Simulate Cases for GAIL
+#'
+#' @description
+#' Create a set of simulated cases 
+#' 
+#' @param units_reg Set of regular spatial units (cases get allocated to this set).
+#' @param method Method of simulating population: 'uniform' or 'beta'. See details.
+#' @param npop Size of population to simulate.
+#' @param beta_setup If `method='beta'`, a `data.frame` describing how to distribute the locations. See details.
+#' 
+#' @param seed If given, sets the seed for the RNG. 
+#' @param ... Space for additional arguments (e.g., for `fields::cover.design`).
+#'  
+#' 
+#' @details 
+#' For `method='uniform'` points are simulated uniformly across the 100x100 spatial domain.
+#' For `method='irregular'` then three additional parameters are necessary: A list of centers, 
+#' and a list of values for alpha and beta. For each center, points are simulated from a beta 
+#' distribution. If alpha and beta are not provided for each center, the default values will 
+#' set the mean of the distribution of points to be the center, and the 
+#' Describe data.frame input.
+
+gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=NULL, seed=NULL ){
+  
+  
+  if( is.numeric(seed) ){
+    set.seed( seed )
+  }
+  
+  
+  ## ##################################################
+  ## Uniform distributed population 
+  ##
+  
+  if( method=="uniform" ){
+    
+    locas01 <- data.frame( 
+      longitude = runif(npop,0,100) , 
+      latitude  = runif(npop,0,100)
+    )
+    
+    locas02 <- sf::st_as_sf( locas01 , coords = c("longitude", "latitude") )
+    
+  }
+  
+  
+  ## ##################################################
+  ## Beta distributed population 
+  ## 
+  
+  if( method=="beta" ){
+    
+    if( is.null(beta_setup) ){
+      beta_setup <- data.frame(
+        nn=npop, mx=50, my=50, sx=30, sy=30
+      )
+    }
+    
+    beta_setup <- dplyr::mutate( beta_setup,
+                                 rx = (100/mx - 1),
+                                 ax = (rx / ( ((sx/100)^2) * ( (rx+1)^3 ) )) - (1/(rx+1)),
+                                 bx = rx*ax,
+                                 ry = (100/my - 1),
+                                 ay = (ry / ( ((sy/100)^2) * ( (ry+1)^3 ) )) - (1/(ry+1)),
+                                 by = ry*ay
+    )
+    
+    beta_parms_x <- list(
+      n      = beta_setup[["nn"]],
+      shape1 = beta_setup[["ax"]],
+      shape2 = beta_setup[["bx"]]
+    )
+    beta_parms_y <- list(
+      n      = beta_setup[["nn"]],
+      shape1 = beta_setup[["ay"]],
+      shape2 = beta_setup[["by"]]
+    )
+    
+    longitude <- unlist( purrr::pmap( beta_parms_x , .f=rbeta ) )
+    latitude  <- unlist( purrr::pmap( beta_parms_y , .f=rbeta ) )
+    locas02 <- sf::st_as_sf( data.frame(longitude, latitude) , 
+                             coords = c("longitude", "latitude") )
+    
+  }
+  
+  ## ##################################################
+  ## Add region ID to the population  
+  ## ruc = "regular unit contains"
+  
+  ruc <- st_contains( units_reg, locas02 )
+  units_reg[["pop"]] <- sapply( ruc, FUN=length )
+  
+  locas02[["region"]] <- factor( NA, levels=unique( units_reg[["region"]]) )
+  for( ii in 1:nrow(units_reg) ){
+    locas02[["region"]][ ruc[[ii]]  ] <- units_reg[["region"]][ii]
+  }
+  
+  
+  ## Make return object
+  
+  return( locas02 )
+  
+}
 
 
 
