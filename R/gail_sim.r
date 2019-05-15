@@ -138,7 +138,6 @@ gail_sim_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
 #'                  The base rate is randomly allocated between these two values. 
 #'                  Default is `c(0.03, 0.07)`.
 #' @param rate_spec A `data.frame` describing coordinates and change to base rate. See details.
-#' 
 #' @param seed If given, sets the seed for the RNG. 
 #' @param ... Space for additional arguments (e.g., for `fields::cover.design`).
 #'  
@@ -146,9 +145,8 @@ gail_sim_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
 #' @details 
 #' Describe the data.frame input.
 #'  
-
-
-gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL ){
+#' @export
+gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, seed=NULL ){
   
   if( is.null(rate_spec) ){
     stop("Must provide argument 'rate_spec'")
@@ -236,7 +234,8 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL ){
 #' distribution. If alpha and beta are not provided for each center, the default values will 
 #' set the mean of the distribution of points to be the center, and the 
 #' Describe data.frame input.
-
+#' 
+#' @export
 gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=NULL, seed=NULL ){
   
   
@@ -295,7 +294,7 @@ gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=N
     
     longitude <- unlist( purrr::pmap( beta_parms_x , .f=rbeta ) )
     latitude  <- unlist( purrr::pmap( beta_parms_y , .f=rbeta ) )
-    locas02 <- sf::st_as_sf( data.frame(longitude, latitude) , 
+    locas02 <- sf::st_as_sf( data.frame(longitude, latitude)*100 , 
                              coords = c("longitude", "latitude") )
     
   }
