@@ -243,6 +243,18 @@ gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=N
     set.seed( seed )
   }
   
+  ## ##################################################
+  ## May want to add functionality to allow for non-square regions. This would need:
+  ## - Extracting the bounds for the region of interest
+  ## - Simulating within these bounds
+  ## - Checking that the simulated points are all within the region 
+  ## 
+  ## - Alternatively: Generate the sample sizes from a poisson distribution
+  ## - Simulate that number of points within each region individually.
+  ## 
+  
+  
+  
   
   ## ##################################################
   ## Uniform distributed population 
