@@ -385,6 +385,7 @@ gail_sim_index <- function( units_sp, tau, phi, seed=NULL ){
   
   ## May want to add in parameterization to control mean?
   ## Is it needed, if there is spatial correlation?
+  # YES -- to be able to align regular and irregular units.
   mvec <- as.matrix( rep(0,nregion) )
   smat <- (tau^2) * solve( Imat - phi * Wmat )
   # smat <- tau * MASS::ginv( Imat - pp*Wmat )
