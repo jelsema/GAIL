@@ -108,4 +108,3 @@ gail_rap <- function( rUnits, iUnits, rUclose, rUdist, max_dist, method, index_v
 
 
 
-

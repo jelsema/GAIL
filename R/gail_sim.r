@@ -131,7 +131,7 @@ gail_sim_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
 #' @description
 #' Function for the simulation framework in GAIL.
 #' Create the underlying rate of cases for each regular spatial unit. This function can be bypassed
-#' if the user creates a variable names 'true_rate' in the set of regular spatial units. 
+#' if the user creates a variable names 'case_rate' in the set of regular spatial units. 
 #' 
 #' @param units_reg Set of regular spatial units
 #' @param rate_base Vector of length 2 giving upper and lower bounds for uniform distribution. 
@@ -203,12 +203,12 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, se
   loca_rate_ruc <- st_contains( units_reg, loca_rate_st )
   mvec_base <- runif( nregion, min(rate_base), max(rate_base) )
   
-  true_rate <- rep(NA,nregion)
+  case_rate <- rep(NA,nregion)
   for( ii in 1:nregion ){
-    true_rate[ii] <- mvec_base[ii] * mean( mvec[ loca_rate_ruc[[ii]] ]  )
+    case_rate[ii] <- mvec_base[ii] * mean( mvec[ loca_rate_ruc[[ii]] ]  )
   }
   
-  return( true_rate )
+  return( case_rate )
   
 }
 
@@ -332,7 +332,69 @@ gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=N
 
 
 
-
+#' Generate a Simulated Similarity Index
+#'
+#' @description
+#' Function for the simulation framework in GAIL.
+#' Creates a spatially dependent similarity index across the regions.
+#' 
+#' @param units_sp Set of spatial units
+#' @param tau Nugget variance parameter, see details.
+#' @param phi Spatial dependence parameter, see details.
+#' @param seed If given, sets the seed for the RNG. 
+#'  
+#' 
+#' @details 
+#' Generates a spatially-dependent similarity index *y* by first simulating 
+#' from a multivariate normal distribution:
+#' 
+#' $Y \sim \mbox{MVN}( 0, \tau^{2}( I - \phi H))$
+#' 
+#' where H is the neighborhood matrix, and I is the identity matrix. Then
+#' the index is converted to a [0, 15] uniform random variable.
+#'  
+#' @export
+gail_sim_index <- function( units_sp, tau, phi, seed=NULL ){
+  
+  if( is.numeric(seed) ){
+    set.seed( seed )
+  }
+  
+  #rate_base <- c(0.03, 0.07)
+  nregion <- length( unique(units_sp[["region"]]) )
+  
+  ## Get the neighborhood matrix
+  nhbd <- spdep::poly2nb( units_sp )
+  Wmat <- spdep::nb2mat( nhbd, style="B" )
+  Imat <- diag(nregion)
+  
+  ## May need to add a check here
+  ## Revert to manually compute generalized Sigma^{-1/2} if needed?
+  
+  ## Create small helper function
+  min_eig <- function( x ){
+    mm <- (Imat - x*Wmat)
+    min( eigen(mm)$values )
+  }
+  
+  max_phi <- stats::uniroot( min_eig, interval=c(0,20) )$root
+  
+  if( phi >= max_phi ){
+    stop( paste0("Argument 'phi' is too large, must be < ", max_phi) )
+  }
+  
+  ## May want to add in parameterization to control mean?
+  ## Is it needed, if there is spatial correlation?
+  mvec <- as.matrix( rep(0,nregion) )
+  smat <- (tau^2) * solve( Imat - phi * Wmat )
+  # smat <- tau * MASS::ginv( Imat - pp*Wmat )
+  
+  idx_norm <- MASS::mvrnorm( 1, mvec, smat )
+  idx_unif <- round( pnorm( idx_norm ) * 15 )
+  
+  return( idx_unif )
+  
+}
 
 
 
