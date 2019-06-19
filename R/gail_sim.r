@@ -213,12 +213,14 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, se
 }
 
 
-#' Simulate Cases for GAIL
+#' Simulate Population for GAIL
 #'
 #' @description
-#' Create a set of simulated cases 
+#' Function for the simulation framework in GAIL.
+#' Create a simulated population distributed across the spatial domain.
 #' 
 #' @param units_reg Set of regular spatial units (cases get allocated to this set).
+#' @param units_irr Set of irregular spatial units (cases get allocated from this set).
 #' @param method Method of simulating population: 'uniform' or 'beta'. See details.
 #' @param npop Size of population to simulate.
 #' @param beta_setup If `method='beta'`, a `data.frame` describing how to distribute the locations. See details.
@@ -231,12 +233,12 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, se
 #' For `method='uniform'` points are simulated uniformly across the 100x100 spatial domain.
 #' For `method='irregular'` then three additional parameters are necessary: A list of centers, 
 #' and a list of values for alpha and beta. For each center, points are simulated from a beta 
-#' distribution. If alpha and beta are not provided for each center, the default values will 
-#' set the mean of the distribution of points to be the center, and the 
+#' distribution. 
+#' 
 #' Describe data.frame input.
 #' 
 #' @export
-gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=NULL, seed=NULL ){
+gail_sim_pop <- function( units_reg, units_irr, method="uniform", npop=100000, beta_setup=NULL, seed=NULL ){
   
   
   if( is.numeric(seed) ){
@@ -314,6 +316,7 @@ gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=N
   ## ##################################################
   ## Add region ID to the population  
   ## ruc = "regular unit contains"
+  ## iuc = "irregular unit contains"
   
   ruc <- st_contains( units_reg, locas02 )
   units_reg[["pop"]] <- sapply( ruc, FUN=length )
@@ -323,6 +326,18 @@ gail_sim_pop <- function( units_reg, method="uniform", npop=100000, beta_setup=N
     locas02[["region"]][ ruc[[ii]]  ] <- units_reg[["region"]][ii]
   }
   
+  
+  iuc <- st_contains( units_irr, locas02 )
+  units_irr[["pop"]] <- sapply( iuc, FUN=length )
+  
+  locas02[["iregion"]] <- factor( NA, levels=unique( units_irr[["region"]]) )
+  for( ii in 1:nrow(units_irr) ){
+    locas02[["iregion"]][ iuc[[ii]]  ] <- units_irr[["region"]][ii]
+  }
+  
+  id_n  <- nrow(locas02)
+  id_c  <- str_pad( 1:id_n , width=str_length(id_n), side="left", pad="0"  )
+  locas02[["pop_id"]] <- paste0( "lpid_", id_c )
   
   ## Make return object
   

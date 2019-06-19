@@ -70,6 +70,8 @@
 
 gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed=NULL, unit_value="m", convert=FALSE, ... ){
   
+  ## GAIL should NOT REQUIRE either set of spatial units to be POINT.
+  
   ## Some error-checking on arguments
   if(   missing(sp_units) | missing(cases)   ){
     stop("Missing at least one of: zips, cases")

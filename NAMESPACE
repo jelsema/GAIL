@@ -3,6 +3,7 @@
 export(gail)
 export(gail_rap)
 export(gail_shp)
+export(gail_sim_index)
 export(gail_sim_pop)
 export(gail_sim_rate)
 export(gail_sim_regions)

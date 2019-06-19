@@ -23,7 +23,7 @@ Default is \code{c(0.03, 0.07)}.}
 \description{
 Function for the simulation framework in GAIL.
 Create the underlying rate of cases for each regular spatial unit. This function can be bypassed
-if the user creates a variable names 'true_rate' in the set of regular spatial units.
+if the user creates a variable names 'case_rate' in the set of regular spatial units.
 }
 \details{
 Describe the data.frame input.
