@@ -2,13 +2,15 @@
 % Please edit documentation in R/gail_sim.r
 \name{gail_sim_pop}
 \alias{gail_sim_pop}
-\title{Simulate Cases for GAIL}
+\title{Simulate Population for GAIL}
 \usage{
-gail_sim_pop(units_reg, method = "uniform", npop = 1e+05,
+gail_sim_pop(units_reg, units_irr, method = "uniform", npop = 1e+05,
   beta_setup = NULL, seed = NULL)
 }
 \arguments{
 \item{units_reg}{Set of regular spatial units (cases get allocated to this set).}
+
+\item{units_irr}{Set of irregular spatial units (cases get allocated from this set).}
 
 \item{method}{Method of simulating population: 'uniform' or 'beta'. See details.}
 
@@ -21,13 +23,14 @@ gail_sim_pop(units_reg, method = "uniform", npop = 1e+05,
 \item{...}{Space for additional arguments (e.g., for \code{fields::cover.design}).}
 }
 \description{
-Create a set of simulated cases
+Function for the simulation framework in GAIL.
+Create a simulated population distributed across the spatial domain.
 }
 \details{
 For \code{method='uniform'} points are simulated uniformly across the 100x100 spatial domain.
 For \code{method='irregular'} then three additional parameters are necessary: A list of centers,
 and a list of values for alpha and beta. For each center, points are simulated from a beta
-distribution. If alpha and beta are not provided for each center, the default values will
-set the mean of the distribution of points to be the center, and the
+distribution.
+
 Describe data.frame input.
 }
