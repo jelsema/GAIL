@@ -131,8 +131,10 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
     sp_units <- sp_units %>%
       st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ...  )
   } else{
-    if(  any( sf::st_geometry_type( sp_units ) != "POINT" ) ){
-      stop("gail() expects features of sp_units to have POINT geometry.\nSee ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry.\ngail_shp() expects features of sp_units to have POLYGON geometry.")
+    if(  !any( sf::st_geometry_type( sp_units ) %in% c("POINT", "POLYGON") ) ){
+      mssg1 <- "Features of sp_units must have POINT or POLYGON geometry."
+      mssg2 <- "\n       See ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry."
+      stop( paste0(mssg1,mssg2) )
     }
     # Recommend this code?
     # sp_units <- st_set_geometry( sp_units, value=NULL )
@@ -159,8 +161,10 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
                        crs = shapefile_crs_format  , agr = "aggregate" )
     
   } else{
-    if(  any( sf::st_geometry_type( sp_units ) != "POINT" ) ){
-      stop("gail() expects features of cases to have POINT geometry.\nSee ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry.")
+    if(  !any( sf::st_geometry_type( sp_units ) %in% c("POINT", "POLYGON") ) ){
+      mssg1 <- "Features of cases must have POINT or POLYGON geometry."
+      mssg2 <- "\n       See ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry."
+      stop( paste0(mssg1,mssg2) )
     }
     st_crs(cases) <- shapefile_crs_format
     

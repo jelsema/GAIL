@@ -94,11 +94,11 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 gail_rap <- function( rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val, ... ){
   
   if( method=="index" ){
-    allocation_probs <- rUclose[[ index_val ]] / sum( rUclose[[ index_val ]] )
+    allocation_probs <- rUclose[[index_val]] / sum(rUclose[[index_val]])
   } else if( method=="equal" ){
-    allocation_probs <- 1 / nrow( rUclose )
+    allocation_probs <- rep( 1 / nrow(rUclose), nrow(rUclose) )
   } else if( method=="icd" ){
-    allocation_probs <- 1 / c( as.numeric( rUdist ) )
+    allocation_probs <- 1 / c( as.numeric(rUdist) )
   }
   
   return( allocation_probs )
