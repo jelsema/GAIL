@@ -74,7 +74,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
   
   ## Some error-checking on arguments
   if(   missing(sp_units) | missing(cases)   ){
-    stop("Missing at least one of: zips, cases")
+    stop("Missing at least one of: sp_units, cases")
   }
   if(   missing(max_dist)  |  !is.numeric(max_dist)   ){
     stop("max_dist must be numeric")
