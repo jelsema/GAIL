@@ -65,7 +65,6 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 #' @param max_dist The maximum distance at which two locations can be considered neighbors.
 #' @param method The method of allocation, see details.
 #' @param index_val If `method="index"`, the name of the variable (in `rUnits`) to be used as an index variable.
-#' @param ... Space for additional arguments. 
 #' 
 #' @details 
 #'  - `method = "index"` : the variable given by `index_val` (in `rUnits`) is used in the form `X / sum(X)`. 
@@ -91,7 +90,7 @@ gail_nn <- function( val, df1, df2, max_dist, suid, ... ){
 #' 
 #' @export
 #' 
-gail_rap <- function( rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val, ... ){
+gail_rap <- function( rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val ){
   
   if( method=="index" ){
     allocation_probs <- rUclose[[index_val]] / sum(rUclose[[index_val]])

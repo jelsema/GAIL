@@ -218,7 +218,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
     
     ## Number of neighbors for the irregular regions
     num_neighbors <- map_dfr( cases_stoch[[ suid ]] ,
-                              ~gail_nn( .x, df1=cases_detrm, df2=cases_stoch, max_dist=max_dist, suid=suid ) )
+                              ~gail_nn( .x, df1=cases_detrm, df2=cases_stoch, max_dist=max_dist, suid=suid, ... ) )
     
     if(  min(num_neighbors) < 3  ){
       stop("Some irregular sp_units have less than 3 regular unit neighbors. Try increasing max_dist")

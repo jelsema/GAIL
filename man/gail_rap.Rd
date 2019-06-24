@@ -4,7 +4,7 @@
 \alias{gail_rap}
 \title{Region Assignment Probability}
 \usage{
-gail_rap(rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val, ...)
+gail_rap(rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val)
 }
 \arguments{
 \item{rUnits}{Data frame of regular spatial units.}
@@ -20,8 +20,6 @@ gail_rap(rUnits, iUnits, rUclose, rUdist, max_dist, method, index_val, ...)
 \item{method}{The method of allocation, see details.}
 
 \item{index_val}{If \code{method="index"}, the name of the variable (in \code{rUnits}) to be used as an index variable.}
-
-\item{...}{Space for additional arguments.}
 }
 \value{
 Returns a set of weights which has length equal to the number of spatial units in \code{rUclose}.
