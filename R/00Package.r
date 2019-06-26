@@ -21,10 +21,11 @@
 #' stochastically allocate cases from PO Box ZIP codes to 
 #' 
 #' @import methods
+#' @importFrom utils globalVariables
 #' 
 "_PACKAGE"
 
-
+globalVariables( strsplit( "ax ay case case_rate case_status data geometry index iregion mx my ncases npop nrural region rregion rural_rate rural_status rx ry sample_n sx sy type", split=" ")[[1]] )
 
 
 

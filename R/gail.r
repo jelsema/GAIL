@@ -10,9 +10,9 @@
 #' probability, inverse centroid distance, and use of an index variable. Alternatively the user may 
 #' specify a custom function to determine allocation probabilities.
 #' 
-#' @param sp_units Data frame of regular spatial units, must have columns named `longitude` and `latitude`.
+#' @param sp_units Data frame of regular spatial units, see details.
 #' @param cases Data frame containing the the cases, see details.
-#' @param suid Column name in both `cases` which contains the spatial unit identification / name.
+#' @param suid Column name in both `cases` and `sp_units` which contains the spatial unit identification / name.
 #' @param num_cases Column name from `cases` containing the number of cases, see details.
 #' @param max_dist The maximum distance at which two locations can be considered neighbors.
 #' @param RAP Function to be used for calculating assignment probabilities, see details.
@@ -23,21 +23,22 @@
 #'  
 #' 
 #' @details 
-#'  - `sp_units` is is set of spatial units that are the "destination", the cases will be aggregated to
-#'    this set of units. It should contain only unique spatial units (no duplicates), and should not have
-#'    any spatial units on a different scale. It must either be an object of class `sf` or have variables 
-#'    `longitude` and `latitude` to be convertable into an object of class `sf`.
+#'  - `sp_units` is the set of spatial units that are the "destination", the cases will be aggregated to
+#'    this set of units. It should not contain duplicate spatial units, and should not have
+#'    any spatial units on a different scale. It must either be an object of class `sf` with POINT or 
+#'    POLYGON geometry, or it must have variables `longitude` and `latitude` to be convertable into 
+#'    an object of class `sf`.
 #'  
 #'  - `cases` contains the units (and associated number of cases) to be allocated. 
-#'  This should be an object of class `sf`. If not, it must have coordinates `latitude` 
-#'  and `longitude` and will be converted to an `sf` object.
-#'  The dataset of cases should be aggregated and have a column for the number 
-#'     of cases. If the column given by `num_cases` does not exist in `cases`,
-#'     then `cases` will be aggregated by `suid` to create the column.
+#'  As with `sp_units`, this must either already have class `sf` or have `latitude` 
+#'  and `longitude` to be converted to an `sf` object.
 #'  
-#'  - If `sp_units` also has a column as given by `suid`, this will be assumed to be a common ID between
-#'    `cases` and `sp_units`. Exact matches by `suid` will be allocated deterministically. Any remaining
-#'    cases will be allocated stochastically.  
+#'  The dataset of cases should be aggregated and have a column for the number of cases. 
+#'  If the column given by `num_cases` does not exist in `cases`, then `cases` will be 
+#'  aggregated by `suid` to create the column.
+#'  
+#'  - Cases will first be allocated deterministically by exact matches with `suid`.
+#'  Any remaining cases will be allocated stochastically.  
 #'  
 #'  - `RAP` : The argument controls how irregular spatial units are allocated to regular spatial units.
 #'  There are several formats this can take. If `RAP` is a function, it will be used. Otherwise `gail_rap` 
@@ -51,26 +52,30 @@
 #'  The user may also specify only `method` and/or `index_val` to control the behavior of `gail_rap` appropriately.
 #' 
 #' 
+#' @seealso 
+#' [gail_mc]
+#' 
 #' @return
-#' Returns a list containing DESCRIBE THE RESULTS
+#' Returns a list containing four elements:
+#' - `rap_method`: The method of stochastic allocation
+#' - `units_reg`: A copy of the input `sp_units` with the number of cases detrministically allocated.
+#' - `units_irr`: The irregular spatial units and the number of cases which were stochastically allocated 
+#'                from these units to the regular spatial unit.
+#' - `sp_units`: A copy of the input `sp_units` along with the number of cases (following allocation).
 #' 
 #' 
-#' @import dplyr 
-#' @import sf
-#' @import units
-#' @importFrom purrr map_dfr
 #' @importFrom data.table :=
+#' @importFrom dplyr group_by summarize sym
+#' @importFrom magrittr %>%
+#' @importFrom purrr map_dfr
+#' @importFrom sf st_as_sf st_crs st_distance st_geometry_type
+#' @import units
 #' 
 #' @export
-#' 
-#' 
-#' 
-#' 
 #' 
 
 gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed=NULL, unit_value="m", convert=FALSE, ... ){
   
-  ## GAIL should NOT REQUIRE either set of spatial units to be POINT.
   
   ## Some error-checking on arguments
   if(   missing(sp_units) | missing(cases)   ){
@@ -129,7 +134,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
   
   if( !("sf" %in% class(sp_units))  ){
     sp_units <- sp_units %>%
-      st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ...  )
+      sf::st_as_sf( coords = c("longitude", "latitude"), agr = "aggregate", ...  )
   } else{
     if(  !any( sf::st_geometry_type( sp_units ) %in% c("POINT", "POLYGON") ) ){
       mssg1 <- "Features of sp_units must have POINT or POLYGON geometry."
@@ -142,7 +147,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
     # sp_units <- sp_units %>%  dplyr::filter( complete.cases(.) )
   }
   
-  shapefile_crs_format <- st_crs( sp_units )
+  shapefile_crs_format <- sf::st_crs( sp_units )
   
   
   ## Detect if cases is simple features object
@@ -157,7 +162,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
         dplyr::summarize( !!num_cases := n() )
     }
     
-    cases <- st_as_sf( cases , coords = c("longitude", "latitude"),
+    cases <- sf::st_as_sf( cases , coords = c("longitude", "latitude"),
                        crs = shapefile_crs_format  , agr = "aggregate" )
     
   } else{
@@ -166,7 +171,7 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
       mssg2 <- "\n       See ?sf::st_set_geometry and ?sf::st_as_sf to set appropriate geometry."
       stop( paste0(mssg1,mssg2) )
     }
-    st_crs(cases) <- shapefile_crs_format
+    sf::st_crs(cases) <- shapefile_crs_format
     
   }
   
@@ -218,7 +223,8 @@ gail <- function( sp_units, cases, suid, num_cases, max_dist, RAP=gail_rap, seed
     
     ## Number of neighbors for the irregular regions
     num_neighbors <- map_dfr( cases_stoch[[ suid ]] ,
-                              ~gail_nn( .x, df1=cases_detrm, df2=cases_stoch, max_dist=max_dist, suid=suid, ... ) )
+                              ~gail_nn( .x, df1=cases_detrm, df2=cases_stoch, 
+                                        max_dist=max_dist, suid=suid, ... ) )
     
     if(  min(num_neighbors) < 3  ){
       stop("Some irregular sp_units have less than 3 regular unit neighbors. Try increasing max_dist")

@@ -17,14 +17,66 @@ gail_sim_index(units_sp, tau, phi, seed = NULL)
 }
 \description{
 Function for the simulation framework in GAIL.
-Creates a spatially dependent similarity index across the regions.
+Creates a spatially dependent similarity index across the regions. One of the method of
+geo-allocation with \link{gail} is to use such an index.
 }
 \details{
 Generates a spatially-dependent similarity index \emph{y} by first simulating
 from a multivariate normal distribution:
 
-$Y \sim \mbox{MVN}( 0, \tau^{2}( I - \phi H))$
+\eqn{ Y \sim \mbox{MVN}( 0, \tau^{2}( I - \phi H) ) }
 
 where H is the neighborhood matrix, and I is the identity matrix. Then
-the index is converted to a \link{0, 15} uniform random variable.
+the index is converted to a \code{[0, 15]} uniform random variable.
+}
+\examples{
+\dontrun{
+ 
+ ## Generate Regions
+ loca_reg <- gail_gen_regions( npoints=40, type="regular", nedge=10, suid="reg" )
+ loca_irr <- gail_gen_regions( npoints=40, type="regular", nedge=10, suid="reg" )
+ 
+ ## Generate incidence rate
+ rate_spec <- data.frame(
+   mx  = c(25, 60), 
+   my  = c(25, 80), 
+   ax  = c(10, 40), 
+   ay  = c(25, 20),
+   efc = c( 0.15 , 4.0 )
+ )
+ loca_reg[["case_rate"]] <- gail_sim_rate( loca_reg,  rate_base=c(0.03,0.07), 
+                                            rate_spec=rate_spec, seed=42 )
+ 
+ ## Generate rate of being in irregular locations
+ irr_spec <- data.frame(
+   mx  = c(85, 20, 25, 60), 
+   my  = c(15, 80, 25, 80), 
+   ax  = c(20, 10, 10, 40), 
+   ay  = c(20, 20, 25, 20),
+   efc = c(4.0, 4.0, 0.15 , 0.15 )
+ )
+  
+ loca_reg[["rural_rate"]] <- gail_sim_rate( loca_reg,  rate_base=c(0.03,0.07), 
+                                            rate_spec=rate_spec, seed=42 )
+    
+ ## Generate population
+ beta_setup <- data.frame(
+   nn=c(5000, 1000, 500),
+   mx=c(50, 25, 60), 
+   my=c(50, 25, 80), 
+   sx=c(30, 10, 10), 
+   sy=c(30, 10, 5)
+ )
+ loca_pop <- gail_sim_pop( loca_reg, loca_irr, method="beta", 
+                           beta_setup=beta_setup, seed=42 )
+ 
+ loca_reg[["index"]] <- gail_sim_index( loca_reg, tau=1.5, phi=0.05 )
+ loca_irr[["index"]] <- gail_sim_index( loca_irr, tau=1.5, phi=0.05 )
+ 
+}
+
+
+}
+\seealso{
+\link{gail_sim_regions}, \link{gail_sim_rate}, \link{gail_sim_pop}, \link{gail_sim_assign}
 }

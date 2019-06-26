@@ -33,3 +33,59 @@ This function assigns case/non and regular/irregular by:
 and rural rate (to generate individuals reporting the irregular spatial unit).
 }
 }
+\examples{
+\dontrun{
+ 
+ ## Generate Regions
+ loca_reg <- gail_gen_regions( npoints=40, type="regular", nedge=10, suid="reg" )
+ loca_irr <- gail_gen_regions( npoints=40, type="regular", nedge=10, suid="reg" )
+ 
+ ## Generate incidence rate
+ rate_spec <- data.frame(
+   mx  = c(25, 60), 
+   my  = c(25, 80), 
+   ax  = c(10, 40), 
+   ay  = c(25, 20),
+   efc = c( 0.15 , 4.0 )
+ )
+ loca_reg[["case_rate"]] <- gail_sim_rate( loca_reg,  rate_base=c(0.03,0.07), 
+                                            rate_spec=rate_spec, seed=42 )
+ 
+ ## Generate rate of being in irregular locations
+ irr_spec <- data.frame(
+   mx  = c(85, 20, 25, 60), 
+   my  = c(15, 80, 25, 80), 
+   ax  = c(20, 10, 10, 40), 
+   ay  = c(20, 20, 25, 20),
+   efc = c(4.0, 4.0, 0.15 , 0.15 )
+ )
+  
+ loca_reg[["rural_rate"]] <- gail_sim_rate( loca_reg,  rate_base=c(0.03,0.07), 
+                                            rate_spec=rate_spec, seed=42 )
+    
+ ## Generate population
+ beta_setup <- data.frame(
+   nn=c(5000, 1000, 500),
+   mx=c(50, 25, 60), 
+   my=c(50, 25, 80), 
+   sx=c(30, 10, 10), 
+   sy=c(30, 10, 5)
+ )
+ loca_pop <- gail_sim_pop( loca_reg, loca_irr, method="beta", 
+                           beta_setup=beta_setup, seed=42 )
+ 
+ ## Simulate index
+ loca_reg[["index"]] <- gail_sim_index( loca_reg, tau=1.5, phi=0.05 )
+ loca_irr[["index"]] <- gail_sim_index( loca_irr, tau=1.5, phi=0.05 )
+ 
+ 
+ ## Assign cases and spatial unit
+ gsa01 <- gail_sim_assign( loca_reg, loca_irr, loca_pop, seed=42 )
+ 
+ 
+}
+
+}
+\seealso{
+\link{gail_sim_regions}, \link{gail_sim_rate}, \link{gail_sim_pop}, \link{gail_sim_index}
+}

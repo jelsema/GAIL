@@ -2,9 +2,9 @@ Package: GAIL
 Title: Geo-Assigment of Irregular Locations
 Version: 0.0-1
 Depends:
-    R (>= 3.3.0), deldir, dplyr, purrr, sf, units, data.table
+    R (>= 3.3.0)
 Imports:
-	methods
+	data.table, deldir, dplyr, fields, magrittr, MASS, methods, purrr, sf, spdep, stringr, tidyr, units
 Suggests:
 	ggplot2, testthat
 Date: 2018-12-03

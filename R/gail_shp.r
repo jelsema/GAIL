@@ -44,7 +44,9 @@
 #' Returns a copy of `sp_units` after having added a column named `num_cases`, which contains 
 #' the number of cases which fall within the boundry of each spatial unit.
 #' 
-#' @import sf
+#' @importFrom dplyr group_by n summarize
+#' @importFrom magrittr %>%
+#' @importFrom sf st_as_sf st_contains st_crs st_distance st_geometry_type
 #' @importFrom data.table :=
 #' 
 #' @seealso
@@ -76,7 +78,7 @@ gail_shp <- function( sp_units, cases, suid, num_cases, group, label , convert=F
       # gail() expects features of sp_units to have POINT geometry.
     }
   }
-  shapefile_crs_format <- st_crs( sp_units )
+  shapefile_crs_format <- sf::st_crs( sp_units )
   
   
   if(  !("sf" %in% class(cases))  ){
@@ -85,18 +87,18 @@ gail_shp <- function( sp_units, cases, suid, num_cases, group, label , convert=F
     if( !any( colnames(cases) == num_cases ) ){
       cases <- cases %>% 
         dplyr::group_by( !!sym( suid ) ) %>% 
-        dplyr::summarize( !!num_cases := n() )
+        dplyr::summarize( !!num_cases := dplyr::n() )
     }
     
-    cases <- st_as_sf( cases , coords = c("longitude", "latitude"),
+    cases <- sf::st_as_sf( cases , coords = c("longitude", "latitude"),
                           crs = shapefile_crs_format  , agr = "aggregate" )
   } else{
-    st_crs(cases) <- shapefile_crs_format
+    sf::st_crs(cases) <- shapefile_crs_format
   }
   
   
   ## Sum up the cases for each of the spatial units
-  idx_list <- st_contains( sp_units, cases )
+  idx_list <- sf::st_contains( sp_units, cases )
   
   sp_units[[ num_cases ]] <- 0
   for( ii in 1:length(idx_list ) ){

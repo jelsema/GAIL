@@ -20,8 +20,14 @@ gail_sim_regions(npoints, type = "irregular", nedge = 5, seed = NULL,
 
 \item{...}{Space for additional arguments (e.g., for \code{fields::cover.design}).}
 }
+\value{
+Returns an object of class \code{sf} with POLYGON geometry. This represents a set of areal
+}
 \description{
-Create a set of spatial polygon regions
+Function for the simulation framework in GAIL.
+Create a set of spatial polygon regions.
+For a more comprehensive description of how to use the simulation framework,
+see the vignette "GAIL Simulation."
 }
 \details{
 The \code{type} argument works as follows:
@@ -34,14 +40,17 @@ Creates regions using Voronoi tesselation via \code{deldir::deldir} and \code{de
 }
 \examples{
 \dontrun{
-  loca_reg <- gail_gen_regions( npoints=40, type="regular"  , nedge=10, suid="reg" )
-  loca_irr <- gail_gen_regions( npoints=40, type="irregular", nedge=6 , seed=42 , P=-20, Q=20 )
+ loca_reg <- gail_gen_regions( npoints=40, type="regular"  , nedge=10, suid="reg" )
+ loca_irr <- gail_gen_regions( npoints=40, type="irregular", nedge=6 , seed=42 , P=-20, Q=20 )
   
-  ggplot( loca_reg ) + 
-    geom_sf( aes(fill=region) )
-  ggplot( loca_irr ) +
-    geom_sf( aes(fill=region) )
+ ggplot( loca_reg ) + 
+   geom_sf( aes(fill=region) )
+ ggplot( loca_irr ) +
+   geom_sf( aes(fill=region) )
 }
 
 
+}
+\seealso{
+\link{gail_sim_rate}, \link{gail_sim_pop}, \link{gail_sim_index}, \link{gail_sim_assign}
 }

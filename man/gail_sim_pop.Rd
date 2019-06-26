@@ -24,7 +24,9 @@ gail_sim_pop(units_reg, units_irr, method = "uniform", npop = 1e+05,
 }
 \description{
 Function for the simulation framework in GAIL.
-Create a simulated population distributed across the spatial domain.
+Create a simulated population distributed across the spatial domain. This population can be
+sampled to create cases, and to create individuals reporting the irregular spatial unit using
+\link{gail_sim_assign}.
 }
 \details{
 For \code{method='uniform'} points are simulated uniformly across the 100x100 spatial domain.
@@ -32,5 +34,59 @@ For \code{method='irregular'} then three additional parameters are necessary: A 
 and a list of values for alpha and beta. For each center, points are simulated from a beta
 distribution.
 
-Describe data.frame input.
+The argument \code{beta_setup} sets the parameters for the beta method of distributing the population.
+This can be used to generate a population which is clustered in certain areas. Thise should be a
+\code{data.frame} (or comprable object) with columns: \code{nn}, \code{mx}, \code{my}, \code{sx}, \code{sy}. These columns
+represent the number of individuals in the cluster (\code{nn}). The cluster is centered at the point
+(\code{mx}, \code{my}), while \code{sx} and \code{sy} are the standard deviation in the x and y dimensions, respectively.
+In one dimension, the cluster will be drawn from a beta distribution (scaled to \code{[0, 100]}) with mean
+of \code{mx} and standard deviation of \code{sx}. The \eqn{\alpha} and \eqn{\beta} parameters of the beta distribution
+are derived from the mean and standard deviation.
+}
+\examples{
+\dontrun{
+ ## Generate Regions
+ loca_reg <- gail_gen_regions( npoints=40, type="regular", nedge=10, suid="reg" )
+ loca_irr <- gail_gen_regions( npoints=40, type="irregular", nedge=6 , seed=42 , P=-20, Q=20 )
+ 
+ ## Generate incidence rate
+ rate_spec <- data.frame(
+   mx  = c(25, 60), 
+   my  = c(25, 80), 
+   ax  = c(10, 40), 
+   ay  = c(25, 20),
+   efc = c( 0.15 , 4.0 )
+ )
+ loca_reg[["case_rate"]] <- gail_sim_rate( loca_reg,  rate_base=c(0.03,0.07), 
+                                            rate_spec=rate_spec, seed=42 )
+ 
+ ## Generate rate of being in irregular locations
+ irr_spec <- data.frame(
+   mx  = c(85, 20, 25, 60), 
+   my  = c(15, 80, 25, 80), 
+   ax  = c(20, 10, 10, 40), 
+   ay  = c(20, 20, 25, 20),
+   efc = c(4.0, 4.0, 0.15 , 0.15 )
+ )
+  
+ loca_reg[["rural_rate"]] <- gail_sim_rate( loca_reg,  rate_base=c(0.03,0.07), 
+                                            rate_spec=rate_spec, seed=42 )
+    
+ ## Generate population
+ beta_setup <- data.frame(
+   nn=c(5000, 1000, 500),
+   mx=c(50, 25, 60), 
+   my=c(50, 25, 80), 
+   sx=c(30, 10, 10), 
+   sy=c(30, 10, 5)
+ )
+ loca_pop <- gail_sim_pop( loca_irr, loca_irr, method="beta", 
+                           beta_setup=beta_setup, seed=42 )
+ 
+}
+
+
+}
+\seealso{
+\link{gail_sim_regions}, \link{gail_sim_rate}, \link{gail_sim_index}, \link{gail_sim_assign}
 }

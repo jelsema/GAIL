@@ -8,11 +8,11 @@ gail(sp_units, cases, suid, num_cases, max_dist, RAP = gail_rap,
   seed = NULL, unit_value = "m", convert = FALSE, ...)
 }
 \arguments{
-\item{sp_units}{Data frame of regular spatial units, must have columns named \code{longitude} and \code{latitude}.}
+\item{sp_units}{Data frame of regular spatial units, see details.}
 
 \item{cases}{Data frame containing the the cases, see details.}
 
-\item{suid}{Column name in both \code{cases} which contains the spatial unit identification / name.}
+\item{suid}{Column name in both \code{cases} and \code{sp_units} which contains the spatial unit identification / name.}
 
 \item{num_cases}{Column name from \code{cases} containing the number of cases, see details.}
 
@@ -29,7 +29,14 @@ gail(sp_units, cases, suid, num_cases, max_dist, RAP = gail_rap,
 \item{...}{Space for additional arguments (e.g., for \code{RAP}).}
 }
 \value{
-Returns a list containing DESCRIBE THE RESULTS
+Returns a list containing four elements:
+\itemize{
+\item \code{rap_method}: The method of stochastic allocation
+\item \code{units_reg}: A copy of the input \code{sp_units} with the number of cases detrministically allocated.
+\item \code{units_irr}: The irregular spatial units and the number of cases which were stochastically allocated
+from these units to the regular spatial unit.
+\item \code{sp_units}: A copy of the input \code{sp_units} along with the number of cases (following allocation).
+}
 }
 \description{
 Stochastic allocation of irregular spatial units to nearby regular spatial units. Both sets of
@@ -40,19 +47,22 @@ specify a custom function to determine allocation probabilities.
 }
 \details{
 \itemize{
-\item \code{sp_units} is is set of spatial units that are the "destination", the cases will be aggregated to
-this set of units. It should contain only unique spatial units (no duplicates), and should not have
-any spatial units on a different scale. It must either be an object of class \code{sf} or have variables
-\code{longitude} and \code{latitude} to be convertable into an object of class \code{sf}.
+\item \code{sp_units} is the set of spatial units that are the "destination", the cases will be aggregated to
+this set of units. It should not contain duplicate spatial units, and should not have
+any spatial units on a different scale. It must either be an object of class \code{sf} with POINT or
+POLYGON geometry, or it must have variables \code{longitude} and \code{latitude} to be convertable into
+an object of class \code{sf}.
 \item \code{cases} contains the units (and associated number of cases) to be allocated.
-This should be an object of class \code{sf}. If not, it must have coordinates \code{latitude}
-and \code{longitude} and will be converted to an \code{sf} object.
-The dataset of cases should be aggregated and have a column for the number
-of cases. If the column given by \code{num_cases} does not exist in \code{cases},
-then \code{cases} will be aggregated by \code{suid} to create the column.
-\item If \code{sp_units} also has a column as given by \code{suid}, this will be assumed to be a common ID between
-\code{cases} and \code{sp_units}. Exact matches by \code{suid} will be allocated deterministically. Any remaining
-cases will be allocated stochastically.
+As with \code{sp_units}, this must either already have class \code{sf} or have \code{latitude}
+and \code{longitude} to be converted to an \code{sf} object.
+}
+
+The dataset of cases should be aggregated and have a column for the number of cases.
+If the column given by \code{num_cases} does not exist in \code{cases}, then \code{cases} will be
+aggregated by \code{suid} to create the column.
+\itemize{
+\item Cases will first be allocated deterministically by exact matches with \code{suid}.
+Any remaining cases will be allocated stochastically.
 \item \code{RAP} : The argument controls how irregular spatial units are allocated to regular spatial units.
 There are several formats this can take. If \code{RAP} is a function, it will be used. Otherwise \code{gail_rap}
 is used. By default the internal function \code{gail_rap} is used with arguments \code{method} and \code{index_var}
@@ -65,4 +75,7 @@ is used. By default the internal function \code{gail_rap} is used with arguments
 }
 
 The user may also specify only \code{method} and/or \code{index_val} to control the behavior of \code{gail_rap} appropriately.
+}
+\seealso{
+\link{gail_mc}
 }
