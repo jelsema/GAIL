@@ -217,9 +217,8 @@ gail_sim_regions <- function( npoints, type="irregular", nedge=5, seed=NULL, sui
 #' }
 #' 
 #' 
-#' @importFrom boot logit inv.logit
 #' @importFrom sf st_as_sf st_contains
-#' @importFrom stats runif
+#' @importFrom stats runif logit inv.logit
 #' 
 #' 
 #' @export
@@ -268,7 +267,7 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, se
   for( ii in 1:nregion ){
     idx_region    <- loca_rate_ruc[[ii]]
     rate_change   <- sum( colMeans( xmat[ idx_region , ] ) * rate_spec[["efc"]] )
-    case_rate[ii] <- boot::inv.logit( boot::logit(mvec_base[ii]) + rate_change )
+    case_rate[ii] <- stats::plogis( stats::qlogis(mvec_base[ii]) + rate_change )
   }
   
   return( case_rate )
