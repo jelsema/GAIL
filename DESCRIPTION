@@ -6,7 +6,10 @@ Depends:
 Imports:
 	data.table, deldir, dplyr, fields, magrittr, MASS, methods, purrr, sf, spdep, stringr, tidyr, units
 Suggests:
-	ggplot2, testthat
+    ggplot2,
+    testthat,
+    knitr,
+    rmarkdown
 Date: 2018-12-03
 Description: A package for handling allocating a set of irregular spatial units (e.g. P.O. Box ZIP codes) onto a regular set of spatial units (e.g. Standard ZIP codes, Census Tract, County, etc).
 Authors@R: c(person("Casey M."  , "Jelsema", email="jelsema.casey@gmail.com", role=c("aut", "cre") ), 
@@ -19,3 +22,4 @@ License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.1.1
+VignetteBuilder: knitr

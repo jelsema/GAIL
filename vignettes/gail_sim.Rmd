@@ -1,0 +1,178 @@
+---
+title: "Simulating Data in GAIL"
+author: "Casey Jelsema"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r echo=FALSE }
+
+nsteps <- "six"
+
+
+
+```
+
+# Introduction
+
+The method implemented in **GAIL** is an intermediary step in a spatial data analysis. It is a means of retaining data that might otherwise be excluded, or aggregated to a more coarse spatial resolution. After applying GAIL, one might continue the analysis on a variety of path, including but not limited to calculating measures like Moran's I, running a spatial model, or something else entirely. It is important to understand how the downstream analysis is impacted by the random allocation of cases to the regular spatial units.
+
+To facillitate this, **GAIL** includes a set of functions to simulate data. In this vignette we walk through the simulation functions to provide an example and further description than what the manual offers. This vignette will be updated as needed. If something appears to be lacking or poorly explained, please contact the author.
+
+
+# Overview of Simulation Framework
+
+Before going into an example of using the simulation functions, we first provide a high-level description of the process and functions. We have organized the process into `r nsteps` steps. 
+
+1. Generate two sets of polynomial regions. The **GAIL** package is designed to work on objects of class `sf` (from the **sf** package). The function `gail_sim_regions()` is used for this.
+
+1. Generate the rate of cases (e.g., influenza) for each of the spatial regions. With `gail_sim_rate()` the user specifies a base rate over the spatial domain, and regions which have a higher or lower rate.
+
+1. Generate the rate at which individuals fall into the irregular spatial unit rather than the regular spatial units. This can also be accomplished using `gail_sim_rate()`.
+
+1. If the allocation method will use a similarity index (setting `RAP="index_column_name"` in the `gail()` function call), then `gail_sim_index()` can be used to generate a spatially-dependent similarity index. This should be done for both the regular and irregular spatial units.
+
+1. To create the simulated population, use `gail_sim_pop()`. This will create a set of *n* "individuals" across the spatial domain, and determine which spatial unit they fall inside (both regular and irregular).
+
+1. From the individuals within each regular spatial unit, randomly sample which should represent cases/non-cases, and which fall into the regular/irregular spatial units. This is done using `gail_sim_assign()`.
+
+
+The goal of these functions is not to be the 'best' implementation, or to be able to represent all possible scenarios, but to be a servicable implementation. These should allow the user to simulate a reasonably broad set of circumstances and investigate the performance of some method. Any of the functions can be replaced with a user-specific means of simulating the relevant quantities, so long as they adhere to some of the naming conventions.
+
+
+# Walkthrough
+
+## Generate the regions
+
+First we generate the regions using `gail_sim_regions()`. In this example we will be using two sets of regions. The regular regions will be a 10x10 grid of squares. When `type="irregular"`, a number of points are simulated and Delaunay triangulation is used to generate a set of regions. The values `P` and `Q` are passed to the function `fields::cover.design`, which implements the space-filling design. 
+
+```{r gen_regions }
+units_reg <- gail_sim_regions( npoints=40, type="regular"  , nedge=10, suid="reg" )
+units_irr <- gail_sim_regions( npoints=50, type="irregular", nedge=6 , suid="irr", seed=42 , P=-500, Q=20 )
+```
+
+We can easily see the results using `ggplot2`:
+
+```{r}
+cowplot::plot_grid(
+  ggplot( units_reg ) + 
+    geom_sf() + 
+    labs(title="Regular Spatial Units"),
+  ggplot( units_irr ) + 
+    geom_sf()+ 
+    labs(title="Irregular Spatial Units")
+)
+```
+
+
+
+
+## Generate the rate of cases
+
+
+
+```{r}
+rate_spec <- data.frame(
+  mx  = c(25, 60), 
+  my  = c(25, 80), 
+  ax  = c(10, 40), 
+  ay  = c(25, 20),
+  efc = c( -1.5 , 3.0 )
+)
+
+units_reg[["case_rate"]] <- gail_sim_rate( units_reg, 
+                                           rate_base=c(0.08,0.12), 
+                                           rate_spec=rate_spec,
+                                           seed=42 )
+
+ggplot( units_reg ) + 
+  geom_sf( aes(fill=case_rate) ) + 
+  labs(title="Regular Spatial Units")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+## Generate the rate of regular vs irregular unit spatial membership
+
+## Generate similarity index
+
+## Generate the population
+
+## Randomly assign the population to spatial units
+
+
+
+
+## Set the rate of IRREGULAR UNITS
+irr_spec <- data.frame(
+  mx  = c(85, 20, 25, 60), 
+  my  = c(15, 80, 25, 80), 
+  ax  = c(20, 10, 10, 40), 
+  ay  = c(20, 20, 25, 20),
+  efc = c(4.0, 4.0, 0.15 , 0.15 )
+)
+units0_reg[["rural_rate"]] <- gail_sim_rate( units0_reg, 
+                                             rate_base=c(0.10,0.15), 
+                                             rate_spec=irr_spec,
+                                             seed=42 )
+
+## Simulate a covariate to be used as an index
+units0_reg[["index"]] <- gail_sim_index( units0_reg, tau=1.5, phi=0.05 )
+units0_irr[["index"]] <- gail_sim_index( units0_irr, tau=1.5, phi=0.05 )
+
+## Generate population
+beta_setup <- data.frame(
+  nn=c(5000, 1000, 500),
+  mx=c(50, 25, 60), 
+  my=c(50, 25, 80), 
+  sx=c(30, 10, 10), 
+  sy=c(30, 10, 5)
+)
+loca_pop <- gail_sim_pop( units0_reg, units0_irr, method="beta", 
+                          beta_setup=beta_setup, seed=42 )
+
+
+## Allocate population
+
+
+gsa01 <- gail_sim_assign( units0_reg, units0_irr, loca_pop, seed=42 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -252,26 +252,7 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, se
     dy  <- abs( loca_rate[["latitude"]]  - rate_spec[["my"]][ii] )
     dxy <- ((dx^2) / rate_spec[["ax"]][ii]^2) + ((dy^2) / rate_spec[["ay"]][ii]^2) 
     xmat[,ii] <- (1 - 0.25*dxy)^2 * ( dxy^2 <= 4 )
-    xmat[,ii] <- (xmat[,ii]-min(xmat[,ii])) / max(xmat[,ii])
   }
-  
-  ## Initial Method: also averaged the uniform variable over the init points
-  # mvec1 <- runif( nregion, min(rate_base), max(rate_base) )
-  # mvec2 <- (xmat %*% rate_spec[["efc"]] ) 
-  # mvec2 <- ifelse( mvec2==0, 1, mvec2 )
-  # mvec  <- mvec1 * mvec2
-  # 
-  # loca_rate_st <- sf::st_as_sf( loca_rate , 
-  #                               coords = c("longitude", "latitude") )
-  # 
-  # loca_rate_ruc <- sf::st_contains( units_reg, loca_rate_st )
-  # units_reg[["rate"]] <- NA
-  # for( ii in 1:nregion ){
-  #   units_reg[["rate"]][ii] <- mean( mvec[ loca_rate_ruc[[ii]] ]  )
-  # }
-  
-  mvec <- (xmat %*% rate_spec[["efc"]] ) + 1
-  #mvec <- ifelse( mvec==0, 1, mvec )
   
   loca_rate_st <- sf::st_as_sf( loca_rate ,
                                 coords = c("longitude", "latitude") )
@@ -281,7 +262,9 @@ gail_sim_rate <- function( units_reg, rate_base=c(0.03,0.07), rate_spec=NULL, se
   
   case_rate <- rep(NA,nregion)
   for( ii in 1:nregion ){
-    case_rate[ii] <- mvec_base[ii] * mean( mvec[ loca_rate_ruc[[ii]] ]  )
+    idx_region    <- loca_rate_ruc[[ii]]
+    rate_change   <- sum( colMeans( xmat[ idx_region , ] ) * rate_spec[["efc"]] )
+    case_rate[ii] <- ilogit( logit(mvec_base[ii]) + rate_change )
   }
   
   return( case_rate )
