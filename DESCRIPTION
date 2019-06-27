@@ -4,7 +4,7 @@ Version: 0.0-1
 Depends:
     R (>= 3.3.0)
 Imports:
-	data.table, deldir, dplyr, fields, magrittr, MASS, methods, purrr, sf, spdep, stringr, tidyr, units
+	boot, data.table, deldir, dplyr, fields, magrittr, MASS, methods, purrr, sf, spdep, stringr, tidyr, units
 Suggests:
     ggplot2,
     testthat,
